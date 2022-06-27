@@ -1,7 +1,9 @@
 import tensorflow as tf
+from tensorflow import keras
 from tensorflow.keras import layers
 import numpy as np
 from numpy.random import randint, uniform
+import matplotlib.pyplot as plt
 
 from tensorflow.python.ops.numpy_ops import np_config
 np_config.enable_numpy_behavior()
