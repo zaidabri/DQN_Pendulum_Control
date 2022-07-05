@@ -1,4 +1,4 @@
-from pendulum import Pendulum 
+from pendulum import Pendulum #Simulation of the environment for a N-pendulum
 import numpy as np
 
 class Single_Hpendulum:
