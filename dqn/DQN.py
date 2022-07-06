@@ -88,7 +88,7 @@ class DQ():
 
         self.nx = self.enviro.NX
         self.nv = self.enviro.NV     
-        # initialize keras neural networks and optimizer
+        
 
         if NN_layers == 4:
             self.q = self.get_critic4(False)
@@ -114,30 +114,29 @@ class DQ():
         
         self.optimizer = tf.keras.optimizers.Adam(self.Hpar.qLearn)
 
-        # initialize the replay buffer using deque
+        
         self.repBuffer = collections.deque(maxlen = self.Hpar.buffSize)
-        # initialize hyper paramters booleans and counters to calculate decay
+        # initialize hyper paramters and counters to calculate decay of hyperParams 
         self.epsilon = self.Hpar.Epsilon
         self.thresC = self.Hpar.thresC
         self.thresV = self.Hpar.thresVel
         self.countEpsilon = 0
         self.counThresh = 0
-        self.decThreshold = False              # a flag to signal that the thresholds need to be decreased
+        self.decThreshold = False              
+        self.GoalR = False                   
+        self.tgtCount = 0                      
         
-        self.GoalR = False                    # a boolean to check that pendulum reached target state
-        self.tgtCount = 0                      # a count of the number of steps the pendulum stayed at target
-        
-        self.U = self.create_u_matrix()    # creating a matrix for descritized controls based on JOINT_COUNT
-        self.costTg = []                         # keep a list of all cost to go per episode
+        self.U = self.createUTable()    
+        self.costTg = []                         
         self.bCostTg = np.inf   
-        self.steps = 0                    # keep track of all the steps taken across the episodes
+        self.steps = 0                   
 
         
         
     def reset(self):
         def param_rst(): # hyperParameters reset 
-            self.decThreshold = False          # a flag to signal that the thresholds need to be decreased
-            self.tgtCount = 0                  # a count of the number of steps the pendulum stayed at target
+            self.decThreshold = False          
+            self.tgtCount = 0                  
             self.costTg = np.float64(0)
             self.gammaI = 1
 
