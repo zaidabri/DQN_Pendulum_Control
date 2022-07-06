@@ -16,7 +16,7 @@ class Single_Hpendulum:
         self.ndt = ndt
         self.N_pend.NDT = self.ndt
         self.NJoint = nJoint
-        self.steps = self.dis_steps  # number of discretization steps 
+        self.steps = dis_steps  # number of discretization steps   # BUG  TODO FIX IT ASAP 
         self.NX = self.N_pend.nx 
         self.NV = self.N_pend.nv 
         self.qMax = qMax                    # % maximum torque in the system 
@@ -71,7 +71,7 @@ class Double_Hpendulum:
         self.ndt = ndt
         self.N_pend.NDT = self.ndt
         self.NJoint = nJoint
-        self.steps = self.dis_steps  # number of discretization steps 
+        self.steps = dis_steps  # number of discretization steps 
         self.NX = self.N_pend.nx 
         self.NV = self.N_pend.nv 
         self.qMax = qMax                    # % maximum torque in the system 
