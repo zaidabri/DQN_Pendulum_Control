@@ -1,10 +1,15 @@
 # Typical header of a Python script using Pinocchio
-from pinocchio.utils import *
-import pinocchio as pin
-import gepetto.corbaserver
-import subprocess
+#First the standart import
 import os
+import subprocess
 import time
+import gepetto.corbaserver
+import pinocchio as pin
+#import subproceses
+from pinocchio.utils import *
+
+
+
 
 # Example of a class Display that connect to Gepetto-viewer and implement a
 # 'place' method to set the position/rotation of a 3D visual object in a scene.
@@ -54,6 +59,5 @@ class Display():
         the layout. If multiple objects have to be placed at the same time, do the refresh
         only at the end of the list.
         '''
-        self.viewer.gui.applyConfiguration(objName,
-                                           pin.SE3ToXYZQUATtuple(M))
+        self.viewer.gui.applyConfiguration(objName, pin.SE3ToXYZQUATtuple(M)) #DEBUG:Module 'pinocchio' has no 'SE3ToXYZQUATtuple' memberPylint(E1101:no-member)
         if refresh: self.viewer.gui.refresh()

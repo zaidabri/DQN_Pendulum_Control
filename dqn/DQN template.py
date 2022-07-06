@@ -49,7 +49,7 @@ def update(xu_batch, cost_batch, xu_next_batch):
     Q_grad = tape.gradient(Q_loss, Q.trainable_variables)          
     # Update the critic backpropagating the gradients
     critic_optimizer.apply_gradients(zip(Q_grad, Q.trainable_variables))    
-
+#DEBUG: not defined yet
 # Create critic and target NNs
 Q = get_critic(nx, nu)
 Q_target = get_critic(nx, nu)
