@@ -188,10 +188,13 @@ class Pendulum:
         self.display(q)
         time.sleep(self.DT/10)
       
-      
+    '''
       #DEBUG later print some KPIs later
-      '''def plot_V_table(self, V):
-        ''' Plot the given Value table V '''
+    ''' 
+
+    '''
+    def plot_V_table(self, V):
+        #Plot the given Value table V
         import matplotlib.pyplot as plt
         Q,DQ = np.meshgrid([self.d2cq(i) for i in range(self.nq)], 
                             [self.d2cv(i) for i in range(self.nv)])
@@ -203,7 +206,7 @@ class Pendulum:
         plt.show()
         
     def plot_policy(self, pi):
-        ''' Plot the given policy table pi '''
+        #Plot the given policy table pi
         import matplotlib.pyplot as plt
         Q,DQ = np.meshgrid([self.d2cq(i) for i in range(self.nq)], 
                             [self.d2cv(i) for i in range(self.nv)])
@@ -215,7 +218,7 @@ class Pendulum:
         plt.show()
         
     def plot_Q_table(self, Q):
-        ''' Plot the given Q table '''
+        #Plot the given Q table 
         import matplotlib.pyplot as plt
         X,U = np.meshgrid(range(Q.shape[0]),range(Q.shape[1]))
         plt.pcolormesh(X, U, Q.T, cmap=plt.cm.get_cmap('Blues'))
@@ -223,5 +226,5 @@ class Pendulum:
         plt.title('Q table')
         plt.xlabel("x")
         plt.ylabel("u")
-        plt.show()'''
-      
+        plt.show()
+    '''

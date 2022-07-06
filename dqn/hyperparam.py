@@ -34,6 +34,10 @@ class hyperParam:
     def up_saveF(self, n):
         self.saveF = n 
 
+    def eps_decay(self, n):
+        # update epsilon decay in epsilon-greedy policy 
+        self.Eps_decay = n 
+
     def up_epochLen(self, n):
         self.epochLen = n 
 
@@ -45,4 +49,4 @@ class hyperParam:
 
     def up_nJoints(self, n):
         self.nJoint = n 
-
+    
