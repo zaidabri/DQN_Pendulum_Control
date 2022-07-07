@@ -29,9 +29,6 @@ class hyperParam:
         self.minBuffer = 5000  # The minimum size for the replay buffer to start training
         self.bufferSize = 50000 # The size of the replay buffer
         
-        self.batchSize = 64     # The batch size taken randomly from buffer
-        self.samplintSteps = 2   # The frequncy of sampling #DEBUG
-
         self.nu = 10   # number of discretized steps 
         self.Up = 100   # After how many steps the pendulum holds the standup position before considered being a success
         
@@ -151,14 +148,14 @@ class DQ():
     def step(self,u): 
         self.x_next, self.cost = self.enviro.step(u)
     
-    def update_q_target(self): 
+    def updateQTarget(self): 
         self.qTgt.set_weights(self.q.get_weights())
 
     
     def updateGamma(self):
        self.gammaI = self.gammaI * self.Hpar.Disc
 
-    def update_params(self):
+    def updateParams(self):
         self.steps += 1
         self.x = self.x_next
         self.costTg = self.costTg + (self.gammaI * self.cost)
@@ -167,7 +164,7 @@ class DQ():
         
    
 
-    def save_model(self,epoch):
+    def saveModel(self,epoch):
         if self.single:
             name = "ModelSingle@Epochs" + str(epoch)+ ".h5"
         else:
@@ -176,7 +173,7 @@ class DQ():
         self.q.save_weights(name)
         
     
-    def save_to_replay(self, u):
+    def save4replay(self, u):
         xu = np.c_[self.x.reshape(1,-1),u.reshape(1,-1)]
         xu_next = np.c_[self.x_next.reshape(1,-1),u.reshape(1,-1)]
         to_append = [xu, self.cost, xu_next,self.reached]
