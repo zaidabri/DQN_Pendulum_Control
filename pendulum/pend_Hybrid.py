@@ -1,4 +1,4 @@
-from pendulum import Pendulum #Simulation of the environment for a N-pendulum
+from pendulum import Pendulums #Simulation of the environment for a N-pendulum
 import numpy as np
 
 class Single_Hpendulum:
@@ -10,7 +10,7 @@ class Single_Hpendulum:
     '''
     def __init__(self, nJoint=1, dis_steps=10, qMax=10, dt=0.1, ndt=1):
 
-        self.N_pend = Pendulum(nJoint, 0)  # create a normal pendulum env first, we assume no noise in the model 
+        self.N_pend = Pendulums(nJoint, 0) #BUGG  # create a normal pendulum env first, we assume no noise in the model 
         self.dt = dt 
         self.N_pend.DT = self.dt
         self.ndt = ndt
@@ -65,7 +65,7 @@ class Double_Hpendulum:
     '''
     def __init__(self, nJoint=2, dis_steps=10, qMax=10, dt=0.1, ndt=1):
 
-        self.N_pend = Pendulum(nJoint, 0)  # create a normal pendulum env first, we assume no noise in the model 
+        self.N_pend = pendulum(nJoint, 0)  # create a normal pendulum env first, we assume no noise in the model 
         self.dt = dt 
         self.N_pend.DT = self.dt
         self.ndt = ndt
