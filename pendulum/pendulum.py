@@ -15,7 +15,7 @@ import sys
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
-from Pendulum import display
+
 import numpy as np
 import pinocchio as pin
 from numpy.linalg import inv
