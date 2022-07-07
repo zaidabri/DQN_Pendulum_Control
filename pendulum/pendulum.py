@@ -10,17 +10,12 @@ for i in range(1000):
    env.render()
 
 '''
-import os
-import sys
-module_path = os.path.abspath(os.path.join('..'))
-if module_path not in sys.path:
-    sys.path.append(module_path)
 
 import numpy as np
 import pinocchio as pin
+from display import Display
 from numpy.linalg import inv
 import time
-
 
 
 class Visual:
@@ -40,7 +35,7 @@ class Visual:
         oMbody = oMjoint*self.placement
         display.place(self.name,oMbody,False)
 
-class Pendulum:
+class Pendulums:
     '''
     Define a class Pendulum with nbJoint joints.
     The members of the class are:
@@ -51,7 +46,7 @@ class Pendulum:
     an object Visual (see above).    
     '''
 
-    def __init__(self, nbJoint, noise_stddev=0.0):
+    def __init__(self, nbJoint=1, noise_stddev=0.0):
         '''Create a Pinocchio model of a N-pendulum, with N the argument <nbJoint>.'''
         self.viewer     = Display()
         self.visuals    = []
@@ -124,8 +119,8 @@ class Pendulum:
     def reset(self, x0=None):
         ''' Reset the state of the environment to x0 '''
         if x0 is None: 
-            q0 = np.pi*(np.rand(self.nq)*2-1)
-            v0 = np.rand(self.nv)*2-1
+            q0 = np.pi*(np.random.rand(self.nq)*2-1)
+            v0 = np.random.rand(self.nv)*2-1
             x0 = np.vstack([q0,v0])
         assert len(x0)==self.nx
         self.x = x0.copy()
@@ -192,44 +187,3 @@ class Pendulum:
         q = self.x[:self.nq]
         self.display(q)
         time.sleep(self.DT/10)
-      
-    '''
-      #DEBUG later print some KPIs later
-    ''' 
-
-    '''
-    def plot_V_table(self, V):
-        #Plot the given Value table V
-        import matplotlib.pyplot as plt
-        Q,DQ = np.meshgrid([self.d2cq(i) for i in range(self.nq)], 
-                            [self.d2cv(i) for i in range(self.nv)])
-        plt.pcolormesh(Q, DQ, V.reshape((self.nv,self.nq)), cmap=plt.cm.get_cmap('Blues'))
-        plt.colorbar()
-        plt.title('V table')
-        plt.xlabel("q")
-        plt.ylabel("dq")
-        plt.show()
-        
-    def plot_policy(self, pi):
-        #Plot the given policy table pi
-        import matplotlib.pyplot as plt
-        Q,DQ = np.meshgrid([self.d2cq(i) for i in range(self.nq)], 
-                            [self.d2cv(i) for i in range(self.nv)])
-        plt.pcolormesh(Q, DQ, pi.reshape((self.nv,self.nq)), cmap=plt.cm.get_cmap('RdBu'))
-        plt.colorbar()
-        plt.title('Policy')
-        plt.xlabel("q")
-        plt.ylabel("dq")
-        plt.show()
-        
-    def plot_Q_table(self, Q):
-        #Plot the given Q table 
-        import matplotlib.pyplot as plt
-        X,U = np.meshgrid(range(Q.shape[0]),range(Q.shape[1]))
-        plt.pcolormesh(X, U, Q.T, cmap=plt.cm.get_cmap('Blues'))
-        plt.colorbar()
-        plt.title('Q table')
-        plt.xlabel("x")
-        plt.ylabel("u")
-        plt.show()
-    '''
