@@ -1,13 +1,18 @@
+import os
+import sys
+module_path = os.path.abspath(os.path.join('..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
 from numpy.random import randint
-from pendulum import pend_Hybrid
+from Pendulum import pend_Hybrid #Debugged
 
 
 import collections
 from tensorflow.python.ops.numpy_ops import np_config
-import os
+
 
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -113,21 +118,21 @@ class DQ():
             self.qTgt.set_weights(self.q.get_weights())
             self.NN_layers = 3
         
-        self.optimizer = tf.keras.optimizers.Adam(self.Hpar.qLearn)
+        self.optimizer = tf.keras.optimizers.Adam(self.Hpar.QLearn)
 
         
-        self.repBuffer = collections.deque(maxlen = self.Hpar.buffSize)
+        self.repBuffer = collections.deque(maxlen = self.Hpar.bufferSize)
         # initialize hyper paramters and counters to calculate decay of hyperParams 
-        self.epsilon = self.Hpar.Epsilon
-        self.thresC = self.Hpar.thresC
-        self.thresV = self.Hpar.thresVel
+        self.epsilon = self.Hpar.epsilon
+        self.thresCost = self.Hpar.thresCost
+        self.thresVel = self.Hpar.thresVel
         self.countEpsilon = 0
         self.counThresh = 0
         self.decThreshold = False              
         self.GoalR = False                   
         self.tgtCount = 0                      
         
-        self.U = self.createUTable()    
+        self.uTable= self.createUTable()     #DEBUGged before it was u
         self.costTg = []                         
         self.bCostTg = np.inf   
         self.steps = 0                   
@@ -181,9 +186,8 @@ class DQ():
 
 
     def createUTable(self):
-        
-
         u_listE= np.array(range(0, int(self.Hpar.nu)))
+        uTable= np.array(range(0, int(self.Hpar.nu))) #Debugged
         fctr = np.power(self.Hpar.nu, (self.Joints - 1))
         for ctrl in range(self.Joints-1):
             if ctrl== self.Joints-2:
@@ -191,17 +195,15 @@ class DQ():
             else:
                 u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
                 u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
-
-        uTable = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
-
-        uTable = np.c_[uTable,u_listF]
+            uTable = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
+            uTable = np.c_[uTable,u_listF]
 
         return uTable
 
 
     def get_critic3(self, Q_tgt):
         
-        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batch_size)
+        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
         state_out1 = layers.Dense(64, activation="relu")(inputs) 
         state_out2 = layers.Dense(64, activation="relu")(state_out1) 
         state_out3 = layers.Dense(64, activation="relu")(state_out2) 
@@ -216,7 +218,7 @@ class DQ():
 
     def get_critic4(self, Q_tgt):
         
-        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batch_size)
+        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
         state_out1 = layers.Dense(16, activation="relu")(inputs) 
         state_out2 = layers.Dense(32, activation="relu")(state_out1) 
         state_out3 = layers.Dense(64, activation="relu")(state_out2) 
@@ -231,7 +233,7 @@ class DQ():
         return model
 
     def get_critic6(self, Q_tgt): 
-        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batch_size)
+        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
         state_out1 = layers.Dense(16, activation="relu")(inputs) 
         state_out2 = layers.Dense(32, activation="relu")(state_out1) 
         state_out3 = layers.Dense(32, activation="relu")(state_out2) 
@@ -251,10 +253,14 @@ class DQ():
 if __name__=="__main__":
     deepQN = DQ(4,True)
 
-    print(25*"#")
     if deepQN.single:
-        print("Deep Q network for single pendulum with" + deepQN.NN_layers + "hidden layers")
+       print("Deep Q network for single pendulum with hiden layers",deepQN.NN_layers )
     else:
-        print("Deep Q network for double pendulum" + deepQN.NN_layers + "hidden layers")
+       print("Deep Q network for double pendulum", deepQN.NN_layers )
+    #print(25*"#")
+    #if deepQN.single:
+    #    print("Deep Q network for single pendulum with" + deepQN.NN_layers + "hidden layers")
+    #else:
+    #    print("Deep Q network for double pendulum" + deepQN.NN_layers + "hidden layers")
+    #print(25*"#")
 
-    print(25*"#")
