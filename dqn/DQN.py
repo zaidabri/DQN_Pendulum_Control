@@ -20,7 +20,11 @@ class hyperParam:
         self.epochs = epochs #Number of cicles for training
         #batches to train in a single dataset to improve the accuracy of the model
         self.epochStep = 250  # The number of steps per epoch
-        self.updateRate = self.epochs/5  # The frequncy for updating the Q-target weights
+        self.uptRate = 5 # The frequncy for updating the Q-target weights
+        self.updateFreq = self.epochs/self.uptRate  # The frequncy for updating the Q-target weights
+        self.batchSize = 64     # The batch size taken randomly from buffer
+        self.samplintSteps = 2   # The frequncy of sampling #DEBUG
+
         #Buffers to store the trajectories in RL
         self.minBuffer = 5000  # The minimum size for the replay buffer to start training
         self.bufferSize = 50000 # The size of the replay buffer
