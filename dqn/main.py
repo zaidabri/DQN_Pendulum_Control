@@ -5,6 +5,11 @@ from tensorflow.python.ops.numpy_ops import np_config
 from DQN import hyperParam as hp, DQ as DQ
 import time 
 import random
+import sys
+import os 
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+np_config.enable_numpy_behavior()
 
 
 def decay(minm, init, rate, count):
