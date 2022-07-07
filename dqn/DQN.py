@@ -106,11 +106,11 @@ class DQ():
             self.NN_layers = NN_layers
 
         else: 
-            print("default implementation")
-            self.q = self.get_critic4(False)
-            self.qTgt = self.get_critic4(True)
+            print("3 hidden layers NN")
+            self.q = self.get_critic3(False)
+            self.qTgt = self.get_critic3(True)
             self.qTgt.set_weights(self.q.get_weights())
-            self.NN_layers = 4
+            self.NN_layers = 3
         
         self.optimizer = tf.keras.optimizers.Adam(self.Hpar.qLearn)
 
@@ -196,6 +196,22 @@ class DQ():
         uTable = np.c_[uTable,u_listF]
 
         return uTable
+
+
+    def get_critic3(self, Q_tgt):
+        
+        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batch_size)
+        state_out1 = layers.Dense(64, activation="relu")(inputs) 
+        state_out2 = layers.Dense(64, activation="relu")(state_out1) 
+        state_out3 = layers.Dense(64, activation="relu")(state_out2) 
+        outputs = layers.Dense(self.Joints)(state_out3)
+    
+        if Q_tgt:
+            model = tf.keras.Model(inputs, outputs, name="QTargets")
+        else: 
+            model = tf.keras.Model(inputs, outputs, name="QFunc")
+    
+        return model
 
     def get_critic4(self, Q_tgt):
         
