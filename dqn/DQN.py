@@ -6,8 +6,8 @@ if module_path not in sys.path:
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
-from numpy.random import randint
-from Pendulum import pend_Hybrid #Debugged
+#from numpy.random import randint
+from PendulumEnv import pend_Hybrid #Debugged
 
 
 import collections
@@ -263,4 +263,3 @@ if __name__=="__main__":
     #else:
     #    print("Deep Q network for double pendulum" + deepQN.NN_layers + "hidden layers")
     #print(25*"#")
-
