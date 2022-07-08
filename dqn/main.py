@@ -101,12 +101,12 @@ if __name__=='__main__':
 
                 DqN.save4replay(u)                                       # save observation to replay buffer
 
-                if DqN.total_steps % Hp.updateFreq == 0:
+                if DqN.steps % Hp.updateFreq == 0:
                     DqN.updateQTarget() 
                     
                 # Sampling from replay buffer and train
                 if len(DqN.repBuffer) >= Hp.bufferSize and DqN.step % Hp.samplintSteps == 0:
-                    batch = random.sample(DqN.replay_buffer, Hp.batchSize)
+                    batch = np.random.sample(DqN.replay_buffer, Hp.batchSize)
                     update(batch)
 
                 DqN.updateParams()
