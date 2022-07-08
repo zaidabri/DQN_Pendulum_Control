@@ -116,11 +116,11 @@ if __name__=='__main__':
             if len(DqN.costTg) > Hp.print:
                 avCTgo = np.average(DqN.costTg[-Hp.print:]) 
             else: 
-               avCTgo= DqN.ctg
+               avCTgo= DqN.cTg
 
             if DqN.decThreshold:
                 DqN.count_thresh +=1
-                DqN.thresC= DqN.thresV = decay(Hp.thresMin , Hp.thresCost,Hp.thresDecay,DqN.count_thresh)
+                DqN.thresC = DqN.thresV = decay(Hp.thresMin , Hp.thresCost, Hp.thresDecay,DqN.count_thresh)
 
             # start finding the best ctg after 5% of the epochs has passed to ensure good exploration vs exploitation trade-off
             if avCTgo <= DqN.bCostTg and epoch > (0.05*Hp.epochs):
@@ -132,7 +132,7 @@ if __name__=='__main__':
                 DqN.countEpsilon +=1
                 DqN.epsilon = decay(Hp.thresMin, Hp.epsilon,Hp.decEps,DqN.countEpsilon)
    
-            DqN.costTg.append(DqN.ctg)
+            DqN.costTg.append(DqN.cTg)
             
             if(epoch % Hp.print == 0):
                 plt.plot( np.cumsum(DqN.costTg)/range(1,len(DqN.costTg)+1)  )
