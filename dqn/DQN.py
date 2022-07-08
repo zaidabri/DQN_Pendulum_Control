@@ -131,8 +131,9 @@ class DQ():
         self.decThreshold = False              
         self.GoalR = False                   
         self.tgtCount = 0                      
-        
-        self.uTable= self.createUTable()     #DEBUGged before it was u
+        self.uTableJ1= self.createUTableJ1()
+        self.uTableJ2= self.createUTableJ2()
+        #self.uTable= self.createUTable()     #DEBUGged before it was u
         self.costTg = []   
         self.cTg = 0                     
         self.bCostTg = np.inf   
@@ -163,7 +164,7 @@ class DQ():
 
     def updateParams(self):
         self.steps += 1
-        self.x = self.x_next
+        self.x = self.xNext
         self.cTg = self.cTg + (self.gammaI * self.cost) #update the cost to go
         self.updateGamma()
         
@@ -181,26 +182,47 @@ class DQ():
     
     def save4replay(self, u):
         xu = np.c_[self.x.reshape(1,-1),u.reshape(1,-1)]
-        xu_next = np.c_[self.x_next.reshape(1,-1),u.reshape(1,-1)]
+        xu_next = np.c_[self.xNext.reshape(1,-1),u.reshape(1,-1)]
         to_append = [xu, self.cost, xu_next,self.ctrl] 
         self.repBuffer.append(to_append)
 
 
-    def createUTable(self):
+    def createUTableJ2(self):
         u_listE= np.array(range(0, int(self.Hpar.nu)))
-        uTable= np.array(range(0, int(self.Hpar.nu))) #Debugged
+        uTableJ2= np.array(range(0, int(self.Hpar.nu))) #Debugged
         fctr = np.power(self.Hpar.nu, (self.Joints - 1))
         for ctrl in range(self.Joints-1):
-            if ctrl== self.Joints-2:
-                u_listF = np.tile(np.array(range(0, int(self.Hpar.nu))), fctr)            
-            else:
-                u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
-                u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
-            uTable = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
-            uTable = np.c_[uTable,u_listF]
+            u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
+            u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
+            uTableJ2 = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
+            uTableJ2 = np.c_[uTableJ2,u_listF]
 
-        return uTable
+        return uTableJ2
 
+    def createUTableJ1(self):
+        u_listE= np.array(range(0, int(self.Hpar.nu)))
+        uTableJ1= np.array(range(0, int(self.Hpar.nu))) #Debugged
+        fctr = np.power(self.Hpar.nu, (self.Joints - 1))
+        u_listF = np.tile(np.array(range(0, int(self.Hpar.nu))), fctr)            
+        uTableJ1 = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
+        uTableJ1 = np.c_[uTableJ1,u_listF]
+            
+        return uTableJ1
+
+#    def createUTable(self):
+#        u_listE= np.array(range(0, int(self.Hpar.nu)))
+#        uTable= np.array(range(0, int(self.Hpar.nu))) #Debugged
+#        fctr = np.power(self.Hpar.nu, (self.Joints - 1))
+#        for ctrl in range(self.Joints-1):
+#            if ctrl== self.Joints-2:
+#                u_listF = np.tile(np.array(range(0, int(self.Hpar.nu))), fctr)            
+#            else:
+#                u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
+#                u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
+#            uTable = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
+#            uTable = np.c_[uTable,u_listF]
+#            
+#        return uTable
 
     def get_critic3(self, Q_tgt):
         
