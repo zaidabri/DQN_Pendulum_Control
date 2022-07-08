@@ -80,6 +80,12 @@ def targetCheck(x, cost):
         DqN.decThreshold = True
     else:
         DqN.reached = False
+
+
+def exportCosts(cost):
+    cost = pd.Series(cost)
+    cost.to_csv('costs.csv', header=None)
+
     
 
 
@@ -152,6 +158,8 @@ if __name__=='__main__':
 
 
         cost = np.cumsum(DqN.costTg)/range(1,len(DqN.costTg)+1) 
+        exportCosts(cost)
+
         if(plotting):
             plt.plot(cost)
             plt.scatter(cost)
@@ -168,6 +176,7 @@ if __name__=='__main__':
             
     except KeyboardInterrupt:
         cost = np.cumsum(DqN.costTg)/range(1,len(DqN.costTg)+1) #TODO save costs for later plotting into a pandas data frame 
+        exportCosts(cost)
         print(25*"#")
         print('Manually stopping training: saving model weights')
         DqN.q.saveModel(str(epoch))
