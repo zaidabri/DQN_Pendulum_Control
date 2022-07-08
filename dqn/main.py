@@ -6,6 +6,7 @@ from DQN import hyperParam as hp, DQ as DQ
 import time 
 import sys
 import os 
+import pandas as pd 
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 np_config.enable_numpy_behavior()
@@ -146,24 +147,34 @@ if __name__=='__main__':
                 dt = time.time() - start
                 t = time.time()
                 totT = t - start
-                print('epoch: #%d  cost: %.3f  buffer size: %d epsilon: %.4f threshold: %.5f elapsed time [s]: %.3f   total sim time [s]: %.1f ' % (epoch, avCTgo, len(DqN.replay_buffer), 100*DqN.epsilon,DqN.threshold_c, dt, totT))
+                print('epoch: %d  cost: %.3f  buffer size: %d epsilon: %.4f threshold: %.5f elapsed time [s]: %.3f   total sim time [s]: %.1f ' % (epoch, avCTgo, len(DqN.repBuffer), DqN.epsilon,DqN.thresCost, dt, totT))
         
+
+
+        cost = np.cumsum(DqN.costTg)/range(1,len(DqN.costTg)+1) 
         if(plotting):
-            plt.plot( np.cumsum(DqN.costTg)/range(1,len(DqN.costTg)+1)  )
+            plt.plot(cost)
+            plt.scatter(cost)
             plt.xlabel("epoch Number")
+            plt.ylabel("cost value")
             plt.title ("Average Cost to Go")
             plt.savefig("CostToGoTraining.eps")
             plt.grid(True)
             plt.show()
+        
+        print(25*"#")
+        print('Training finished: saving model')
+        DqN.q.saveModel(str(epoch))
             
     except KeyboardInterrupt:
+        cost = np.cumsum(DqN.costTg)/range(1,len(DqN.costTg)+1) #TODO save costs for later plotting into a pandas data frame 
         print(25*"#")
         print('Manually stopping training: saving model weights')
-        name = 'MODEL@Epoch' + str(epoch) + '.h5'
-        DqN.q.save_weights(name)
+        DqN.q.saveModel(str(epoch))
             
-        plt.plot( np.cumsum(DqN.costTg)/range(1,len(DqN.costTg)+1)  )
+        plt.plot( cost )
         plt.xlabel("epoch Number")
+        plt.ylabel("cost value")
         plt.title ("Average Cost to Go")
         plt.grid(True)
         plt.savefig("CostToGoTraining.eps")

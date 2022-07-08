@@ -152,7 +152,7 @@ class DQ():
         
     
     def step(self,u): 
-        self.x_next, self.cost = self.enviro.step(u)
+        self.xNext, self.cost = self.enviro.step(u)
     
     def updateQTarget(self): 
         self.qTgt.set_weights(self.q.get_weights())
