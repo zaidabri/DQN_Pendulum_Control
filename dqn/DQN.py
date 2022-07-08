@@ -80,7 +80,7 @@ class DQ():
     def __init__(self, NN_layers, single):
         # initialize enviroment
         self.Hpar = hyperParam()
-
+        self.ctrl  = self.Hpar.ctrl
         
 
         if single:
@@ -133,7 +133,8 @@ class DQ():
         self.tgtCount = 0                      
         
         self.uTable= self.createUTable()     #DEBUGged before it was u
-        self.costTg = []                         
+        self.costTg = []   
+        self.cTg = 0                     
         self.bCostTg = np.inf   
         self.steps = 0                   
 
@@ -143,7 +144,7 @@ class DQ():
         def param_rst(): # hyperParameters reset 
             self.decThreshold = False          
             self.tgtCount = 0                  
-            self.costTg = np.float64(0)
+            self.cTg = np.float64(0)
             self.gammaI = 1
 
         self.x = self.enviro.reset()
@@ -158,12 +159,12 @@ class DQ():
 
     
     def updateGamma(self):
-       self.gammaI = self.gammaI * self.Hpar.Disc
+       self.gammaI = self.gammaI * self.Hpar.disc
 
     def updateParams(self):
         self.steps += 1
         self.x = self.x_next
-        self.costTg = self.costTg + (self.gammaI * self.cost)
+        self.cTg = self.cTg + (self.gammaI * self.cost) #update the cost to go
         self.updateGamma()
         
         
@@ -181,8 +182,8 @@ class DQ():
     def save4replay(self, u):
         xu = np.c_[self.x.reshape(1,-1),u.reshape(1,-1)]
         xu_next = np.c_[self.x_next.reshape(1,-1),u.reshape(1,-1)]
-        to_append = [xu, self.cost, xu_next,self.reached]
-        self.replay_buffer.append(to_append)
+        to_append = [xu, self.cost, xu_next,self.ctrl] 
+        self.repBuffer.append(to_append)
 
 
     def createUTable(self):
