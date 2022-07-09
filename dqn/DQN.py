@@ -174,7 +174,6 @@ class DQ():
                 gamma *= self.Hpar.gamma
                 
             
-            # Save NN weights to file (in HDF5)
             if ctgo < self.bCostTg:
 
                 self.bCostTg = ctgo
@@ -219,7 +218,7 @@ class DQ():
                     fctr = self.Hpar.gamma*TarVal[id]
                     y[id] = costBatch[id] + fctr      
             
-            # Compute Q
+           
             qOut = self.q(xBatch, training=True).reshape((len(batch),-1,self.Joints))
 
             a = np.repeat(np.arange(len(batch)),self.Joints).reshape(len(batch),-1)
@@ -334,4 +333,5 @@ if __name__=="__main__":
         print("Begin training DQN ")
         deepQN.trainNN()
 
-    
+    #file_name = ""
+    #deepQN.visualize()
