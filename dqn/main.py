@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from pyrsistent import dq
 import tensorflow as tf
 from tensorflow.python.ops.numpy_ops import np_config
 from DQN import hyperParam as hp, DQ as DQ
@@ -8,7 +9,7 @@ import sys
 import os 
 import pandas as pd 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 np_config.enable_numpy_behavior()
 
 
@@ -55,18 +56,22 @@ def update(batch):
     
 
 def uSelect():
-    #print("Joints",DqN.Joints)
-    #print("Here", type(DqN.Joints))
-    if DqN.Joints == 1:
-        uTable = DqN.uTableJ1
-    else:
-       uTable = DqN.uTableJ2
+    print("Joints",DqN.Joints)
+    print("Here", type(DqN.Joints))
+    
+    uTable = DqN.uTable
+
     if np.random.uniform(0,1) < DqN.epsilon:
         u = tf.random.uniform(shape=[DqN.Joints],minval=0,maxval=Hp.nu,dtype=tf.dtypes.int64)
     else:
-        xRep = tf.repeat(DqN.x.reshape(1,-1),Hp.nu**(DqN.Joints),axis=0)
-        #print("shape control table",DqN.uTable.shape)
-        #print("shape xReplay", xRep.shape)
+        xRep = tf.repeat(DqN.x, Hp.nu**(DqN.Joints),axis=0)
+        print(50*"--")
+        print(DqN.x.shape)
+        print(DqN.x)
+        print(50*"--")
+        print("shape control table",uTable.shape)
+        print("shape xReplay", xRep.shape)
+        print("x replay val", xRep)
 
         xuCk = tf.concat([xRep, uTable],axis=1).reshape(Hp.nu**(DqN.Joints),1)
         pred = DqN.q.__call__(xuCk)

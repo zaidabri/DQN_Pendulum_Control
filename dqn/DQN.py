@@ -131,9 +131,11 @@ class DQ():
         self.decThreshold = False              
         self.GoalR = False                   
         self.tgtCount = 0                      
-        self.uTableJ1= self.createUTableJ1()
-        self.uTableJ2= self.createUTableJ2()
-        #self.uTable= self.createUTable()     #DEBUGged before it was u
+        #self.uTableJ1= self.createUTableJ1()
+        #self.uTableJ2= self.createUTableJ2()
+        self.uTable= self.createUTable()     #DEBUGged before it was u
+        print("u table:", self.uTable.shape)
+        print(self.uTable)
         self.costTg = []   
         self.cTg = 0                     
         self.bCostTg = np.inf   
@@ -187,18 +189,33 @@ class DQ():
         self.repBuffer.append(to_append)
 
 
-    def createUTableJ2(self):
-        u_listE= np.array(range(0, int(self.Hpar.nu)))
-        uTableJ2= np.array(range(0, int(self.Hpar.nu))) #Debugged
-        fctr = np.power(self.Hpar.nu, (self.Joints - 1))
-        for ctrl in range(self.Joints-1):
-            u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
-            u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
-            uTableJ2 = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
-            uTableJ2 = np.c_[uTableJ2,u_listF]
+    def createUTable(self):
+        print("joints", self.Joints)
+        Utab1 = np.array(range(0, self.Hpar.nu))
+        Utab2 = np.repeat(Utab1, self.Hpar.nu**(self.Joints-1))
+        uTab = Utab2 
 
-        return uTableJ2
+        for j in range(self.Joints-1):
+            if(j == self.Joints-2):
+                uTab3 = np.tile(Utab1, self.Hpar.nu**(self.Joints-1))
+            else:
+                uTab3 = np.repeat(Utab1, self.Hpar.nu**(self.Joints-2-j))
+                uTab3 = np.tile(uTab3, self.Hpar.nu**(j+1))
+            uTab = np.c_[Utab1, uTab3]
 
+        return uTab
+
+        #u_listE= np.array(range(0, int(self.Hpar.nu)))
+        #uTableJ2= np.array(range(0, int(self.Hpar.nu))) #Debugged
+        #fctr = np.power(self.Hpar.nu, (self.Joints - 1))
+        #for ctrl in range(self.Joints-1):
+        #    u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
+        #    u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
+        #    uTableJ2 = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
+        #    uTableJ2 = np.c_[uTableJ2,u_listF]
+
+        #return uTableJ2
+    '''
     def createUTableJ1(self):
         u_listE= np.array(range(0, int(self.Hpar.nu)))
         uTableJ1= np.array(range(0, int(self.Hpar.nu))) #Debugged
@@ -208,7 +225,7 @@ class DQ():
         uTableJ1 = np.c_[uTableJ1,u_listF]
             
         return uTableJ1
-
+    '''
 #    def createUTable(self):
 #        u_listE= np.array(range(0, int(self.Hpar.nu)))
 #        uTable= np.array(range(0, int(self.Hpar.nu))) #Debugged
