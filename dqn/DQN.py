@@ -18,7 +18,7 @@ from tensorflow.python.ops.numpy_ops import np_config
 
 
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 np_config.enable_numpy_behavior()
 
 class hyperParam:
@@ -89,7 +89,7 @@ class DQ():
         self.Joints = 2 
 
         self.nx = self.enviro.NX
-        self.nv = self.enviro.NV     
+        #self.nv = self.enviro.NV     
         self.nu = self.Hpar.nu
         
 
@@ -97,7 +97,7 @@ class DQ():
             self.q = self.get_critic4()
             self.NN_layers = NN_layers
             self.q.summary()
-            self.qT = self.get_crtitic4()
+            self.qT = self.get_critic4()
             self.qT.set_weights(self.q.get_weights())
 
         elif NN_layers == 6:
@@ -105,14 +105,14 @@ class DQ():
             self.q = self.get_critic6()
             self.NN_layers = NN_layers
             self.q.summary()
-            self.qT = self.get_crtitic6()
+            self.qT = self.get_critic6()
             self.qT.set_weights(self.q.get_weights())
 
         else: 
             self.q = self.get_critic3()
             self.q.summary()
             self.NN_layers = 3
-            self.qT = self.get_crtitic3()
+            self.qT = self.get_critic3()
             self.qT.set_weights(self.q.get_weights())
 
 
@@ -130,7 +130,7 @@ class DQ():
     def chooseU(self, x, eps):
 
         if np.random.uniform(0,1) < eps: 
-            u = np.randint(self.Hpar.nu, size=self.Joints)
+            u = np.random.randint(self.Hpar.nu, size=self.Joints)
         else: 
             prediction = self.q.predict(x.reshape(1,-1))
             u = np.argmin(prediction.reshape(self.Hpar.nu, self.Joints), axis = 0)
@@ -323,10 +323,7 @@ if __name__=="__main__":
     deepQN = DQ(4)
     training = True 
 
-    if deepQN.single:
-       print("Deep Q network for single pendulum with hiden layers",deepQN.NN_layers )
-    else:
-       print("Deep Q network for double pendulum", deepQN.NN_layers )
+    print("Deep Q network for double pendulum", deepQN.NN_layers )
    
     print(50*"--")
     if training == True:

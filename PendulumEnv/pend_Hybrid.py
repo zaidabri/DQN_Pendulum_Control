@@ -69,22 +69,31 @@ class Double_Hpendulum:
   # create a normal pendulum env first, we assume no noise in the model 
         self.dt = dt 
         self.N_pend.DT = self.dt
-        self.ndt = ndt
-        self.N_pend.NDT = self.ndt
+        self.N_pend.NDT = ndt
         self.NJoint = nJoint
         self.steps = dis_steps  # number of discretization steps 
         self.NX = self.N_pend.nx 
-        self.NV = self.N_pend.nv 
         self.qMax = qMax                    # % maximum torque in the system 
         self.DU = 2*self.qMax / self.steps  # we calculate the joint torque resolution 
     
-    def reset(self):
+    def reset(self, x=None):
         ''' resets state of the pendulum to a random position and velocity'''
-        self.x = self.N_pend.reset(None)
+        self.x = self.N_pend.reset(x)
         return self.x
 
     def render(self):
         self.N_pend.render()
+
+
+    def DiscreteCtrl(self, u):
+        '''
+        this function allows to switch the control input from continous to discrete
+        according to the chosen control discretization steps 
+        '''
+        u = np.clip(u,-self.qMax+1e-3,self.qMax-1e-3)
+        disc_ctrl_input = np.floor((u+self.qMax)/self.DU).astype(int)
+        return disc_ctrl_input
+
 
     def ContinousCtrl(self, iu):
         ''' this function allows to 
@@ -101,11 +110,12 @@ class Double_Hpendulum:
     def step(self,iu):
         ''' We calculate the next state and cost'''
         u = self.ContinousCtrl(iu)
-
+        
         if type(u) is np.ndarray: 
             u = u 
         else: 
            u = [u]
     
         self.x, cost = self.N_pend.step(u)
+
         return self.x, cost
