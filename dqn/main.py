@@ -40,7 +40,7 @@ def update(batch):
                 # apply only cost of current step if at target state
                 y = y.write(i,costBatch[i])
             else:
-                y = y.write(i,costBatch[i] + Hp.disc*targetValuesInput[i])
+                y = y.write(i,costBatch[i] + Hp.gamma*targetValuesInput[i])
         y= y.stack()             
         # Compute batch of Values associated to the sampled batch of states
         qValue = DqN.q(xuBatch, training=True) 

@@ -6,9 +6,12 @@ if module_path not in sys.path:
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
-#from numpy.random import randint
 from PendulumEnv import pend_Hybrid #Debugged
-
+import collections
+import matplotlib.pyplot as plt 
+import time 
+import random
+import pandas as pd 
 
 import collections
 from tensorflow.python.ops.numpy_ops import np_config
@@ -38,7 +41,7 @@ class hyperParam:
         self.Up = 100   # After how many steps the pendulum holds the standup position before considered being a success
         
         self.QLearn = 2e-3   # The learning rate of the DQN model 
-        self.disc = 0.9  #  Discount factor - (GAMMA)
+        self.gamma = 0.9  #  Discount factor - (GAMMA)
         self.epsilon = 1   # Initial probability of epsilon 
         self.decEps = 1e-3   # Exponential decrease rate for epsilon #DEBUG
         self.minEpsilon = self.decEps # The Minimum value for epsilon #DEBUG
@@ -77,171 +80,206 @@ class hyperParam:
 
 
 class DQ():
-    def __init__(self, NN_layers, single):
+
+    def __init__(self, NN_layers):
         # initialize enviroment
         self.Hpar = hyperParam()
-        self.ctrl  = self.Hpar.ctrl
         
-
-        if single:
-            self.enviro = pend_Hybrid.Single_Hpendulum()
-            self.single = True
-            self.Joints = 1 
-        else: 
-            self.enviro = pend_Hybrid.Double_Hpendulum()
-            self.single = False 
-            self.Joints = 2 
+        self.enviro = pend_Hybrid.Double_Hpendulum()
+        self.Joints = 2 
 
         self.nx = self.enviro.NX
         self.nv = self.enviro.NV     
+        self.nu = self.Hpar.nu
         
 
         if NN_layers == 4:
-            self.q = self.get_critic4(False)
-       
-            self.qTgt = self.get_critic4(True)
-            self.qTgt.set_weights(self.q.get_weights())
+            self.q = self.get_critic4()
             self.NN_layers = NN_layers
+            self.q.summary()
+            self.qT = self.get_crtitic4()
+            self.qT.set_weights(self.q.get_weights())
 
         elif NN_layers == 6:
 
-            self.q = self.get_critic6(False)
-       
-            self.qTgt = self.get_critic6(True)
-            self.qTgt.set_weights(self.q.get_weights())
+            self.q = self.get_critic6()
             self.NN_layers = NN_layers
+            self.q.summary()
+            self.qT = self.get_crtitic6()
+            self.qT.set_weights(self.q.get_weights())
 
         else: 
-            print("3 hidden layers NN")
-            self.q = self.get_critic3(False)
-            self.qTgt = self.get_critic3(True)
-            self.qTgt.set_weights(self.q.get_weights())
+            self.q = self.get_critic3()
+            self.q.summary()
             self.NN_layers = 3
-        
-        self.optimizer = tf.keras.optimizers.Adam(self.Hpar.QLearn)
+            self.qT = self.get_crtitic3()
+            self.qT.set_weights(self.q.get_weights())
+
 
         
         self.repBuffer = collections.deque(maxlen = self.Hpar.bufferSize)
-        # initialize hyper paramters and counters to calculate decay of hyperParams 
         self.epsilon = self.Hpar.epsilon
-        self.thresCost = self.Hpar.thresCost
-        self.thresVel = self.Hpar.thresVel
-        self.countEpsilon = 0
-        self.counThresh = 0
-        self.decThreshold = False              
-        self.GoalR = False                   
-        self.tgtCount = 0                      
-        #self.uTableJ1= self.createUTableJ1()
-        #self.uTableJ2= self.createUTableJ2()
-        self.uTable= self.createUTable()     #DEBUGged before it was u
-        print("u table:", self.uTable.shape)
-        print(self.uTable)
-        self.costTg = []   
+
         self.cTg = 0                     
-        self.bCostTg = np.inf   
-        self.steps = 0                   
-
-        
-        
-    def reset(self):
-        def param_rst(): # hyperParameters reset 
-            self.decThreshold = False          
-            self.tgtCount = 0                  
-            self.cTg = np.float64(0)
-            self.gammaI = 1
-
-        self.x = self.enviro.reset()
-        param_rst()
+        self.bCostTg = np.inf  
+        self.costTg = []  
+        self.steps = 0  
+        self.optimizer = tf.keras.optimizers.Adam(self.Hpar.QLearn)
         
     
-    def step(self,u): 
-        self.xNext, self.cost = self.enviro.step(u)
-    
-    def updateQTarget(self): 
-        self.qTgt.set_weights(self.q.get_weights())
+    def chooseU(self, x, eps):
 
-    
-    def updateGamma(self):
-       self.gammaI = self.gammaI * self.Hpar.disc
-
-    def updateParams(self):
-        self.steps += 1
-        self.x = self.xNext
-        self.cTg = self.cTg + (self.gammaI * self.cost) #update the cost to go
-        self.updateGamma()
-        
-        
-   
-
-    def saveModel(self,epoch):
-        if self.single:
-            name = "ModelSingle@Epochs" + str(epoch)+ ".h5"
-        else:
-            name = "ModelDouble@Epochs" + str(epoch)+ ".h5"
-
-        self.q.save_weights(name)
-        
-    
-    def save4replay(self, u):
-        xu = np.c_[self.x.reshape(1,-1),u.reshape(1,-1)]
-        xu_next = np.c_[self.xNext.reshape(1,-1),u.reshape(1,-1)]
-        to_append = [xu, self.cost, xu_next,self.ctrl] 
-        self.repBuffer.append(to_append)
+        if np.random.uniform(0,1) < eps: 
+            u = np.randint(self.Hpar.nu, size=self.Joints)
+        else: 
+            prediction = self.q.predict(x.reshape(1,-1))
+            u = np.argmin(prediction.reshape(self.Hpar.nu, self.Joints), axis = 0)
 
 
-    def createUTable(self):
-        print("joints", self.Joints)
-        Utab1 = np.array(range(0, self.Hpar.nu))
-        Utab2 = np.repeat(Utab1, self.Hpar.nu**(self.Joints-1))
-        uTab = Utab2 
 
-        for j in range(self.Joints-1):
-            if(j == self.Joints-2):
-                uTab3 = np.tile(Utab1, self.Hpar.nu**(self.Joints-1))
-            else:
-                uTab3 = np.repeat(Utab1, self.Hpar.nu**(self.Joints-2-j))
-                uTab3 = np.tile(uTab3, self.Hpar.nu**(j+1))
-            uTab = np.c_[Utab1, uTab3]
+    def trainNN(self): 
+        Start = time.time()
 
-        return uTab
+        steps = 0
+        eps = self.epsilon
+        thres = self.Hpar.epochStep -1 
 
-        #u_listE= np.array(range(0, int(self.Hpar.nu)))
-        #uTableJ2= np.array(range(0, int(self.Hpar.nu))) #Debugged
-        #fctr = np.power(self.Hpar.nu, (self.Joints - 1))
-        #for ctrl in range(self.Joints-1):
-        #    u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
-        #    u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
-        #    uTableJ2 = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
-        #    uTableJ2 = np.c_[uTableJ2,u_listF]
-
-        #return uTableJ2
-    '''
-    def createUTableJ1(self):
-        u_listE= np.array(range(0, int(self.Hpar.nu)))
-        uTableJ1= np.array(range(0, int(self.Hpar.nu))) #Debugged
-        fctr = np.power(self.Hpar.nu, (self.Joints - 1))
-        u_listF = np.tile(np.array(range(0, int(self.Hpar.nu))), fctr)            
-        uTableJ1 = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
-        uTableJ1 = np.c_[uTableJ1,u_listF]
+        for epoch in range(self.Hpar.epochs): 
             
-        return uTableJ1
-    '''
-#    def createUTable(self):
-#        u_listE= np.array(range(0, int(self.Hpar.nu)))
-#        uTable= np.array(range(0, int(self.Hpar.nu))) #Debugged
-#        fctr = np.power(self.Hpar.nu, (self.Joints - 1))
-#        for ctrl in range(self.Joints-1):
-#            if ctrl== self.Joints-2:
-#                u_listF = np.tile(np.array(range(0, int(self.Hpar.nu))), fctr)            
-#            else:
-#                u_listF = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-2-ctrl)))
-#                u_listF = np.tile(u_listF, np.power(self.Hpar.nu, (ctrl+1)))
-#            uTable = np.repeat(u_listE, np.power(self.Hpar.nu, (self.Joints-1)))
-#            uTable = np.c_[uTable,u_listF]
-#            
-#        return uTable
+            ctgo = 0; x= self.enviro.reset(); gamma =1 
 
-    def get_critic3(self, Q_tgt):
+            for step in range(self.Hpar.epochStep): 
+                step = step+1
+
+                u = self.chooseU(x, eps)
+                xNext, cost = self.enviro.step(u)
+
+                if step == thres: 
+                    finished = True 
+                else: 
+                    finished = False 
+
+                self.repBuffer.append([x, u, cost, xNext, finished])
+
+                if steps % self.Hpar.updateFreq == 0: 
+                    self.qT.set_weights(self.q.get_weights())
+
+               
+                if len(self.repBuffer) > self.Hpar.minBuffer and steps % self.Hpar.samplintSteps == 0:
+                    batch = random.sample(self.repBuffer, self.Hpar.batchSize)
+                    self.update(batch)
+                
+                x = xNext
+                ctgo += gamma * cost
+                gamma *= self.Hpar.gamma
+                
+            
+            # Save NN weights to file (in HDF5)
+            if ctgo < self.bCostTg:
+
+                self.bCostTg = ctgo
+                self.Q.save_weights("model"+str(self.NN_layers)+"dqn.h5")
+                
+            
+            eps= max(self.Hpar.minEpsilon, np.exp(-self.Hpar.decEps*epoch))
+            self.costTg.append(ctgo)
+            if epoch % self.Hpar.print == 0:
+               
+                print('Epoch: %d | cost %.5f | %.4f Epsilon | time elapsed %.3f [s]' % (epoch, np.mean(self.h_ctg[-self.Hpar.print:]), eps, (time.time-Start)))
+                Start = time.time()
+
+        print("--------------- Plotting & Exporting costs overview --------------------------")
+        self.exportCosts()
+        self.plotting()
+
+    def batchSMPL(self, n, batch):
+        arr = np.array([random.sample[n]] for random.sample in batch)
+        return arr 
+
+
+    def update(self, batch): 
+        xBatch = self.batchSMPL(0, batch)
+        uBatch = self.batchSMPL(1, batch)
+        costBatch = self.batchSMPL(2, batch)
+        xNextBatch = self.batchSMPL(3, batch)
+        finishedBatch = self.batchSMPL(4, batch)
+
+        with tf.GradientTape as tape: 
+
+            TarOut = self.qT(xNextBatch, training = True).reshape((len(batch), -1, self.Joints))
+            
+            TarVal  = tf.math.reduce_sum(np.min(TarOut, axis=1), axis=1)
+            
+           
+            y = np.zeros(len(batch))
+            for id, finished in enumerate(finishedBatch):
+                if finished != False:
+                    y[id] = costBatch[id]
+                else:
+                    fctr = self.Hpar.gamma*TarVal[id]
+                    y[id] = costBatch[id] + fctr      
+            
+            # Compute Q
+            qOut = self.q(xBatch, training=True).reshape((len(batch),-1,self.Joints))
+
+            a = np.repeat(np.arange(len(batch)),self.Joints).reshape(len(batch),-1)
+            b = uBatch.reshape(n,-1)
+            c = np.repeat(np.arange(self.Joints).reshape(1,-1),len(batch),axis=0)
+
+            qVal  = tf.math.reduce_sum(qOut[a, b, c], axis=1)
+            qLoss = tf.math.reduce_mean(tf.math.square(y - qVal))
+        
+        trainable = self.q.trainable_variables
+        DeltaQ = tape.gradient(qLoss, trainable)
+        self.optimizer.apply_gradients(zip(DeltaQ, trainable))
+        
+
+
+    def exportCosts(self):
+        cost = np.cumsum(self.q.costTg)/range(1,self.Hpar.epochs+1) 
+        cost = pd.Series(cost)
+        cost.to_csv('costs.csv', header=None)
+
+    def plotting(self):
+        cost = np.cumsum(self.q.costTg)/range(1,self.Hpar.epochs+1) 
+        plt.plot(cost, color = 'black')
+        plt.title("average cost-to-go per episode")
+        plt.xlabel("epoch number")
+        plt.ylabel("cost to go value")
+        plt.legend("cost-to-go")
+        plt.grid(True)
+        plt.savefig("costToGo.eps")
+        plt.show()
+
+    def visualize(self, file_name, x=None): 
+
+        self.q.load_weights(file_name)
+
+        gamma = 1 
+        ctgo = np.float64(0)
+
+        if x != None: 
+            x = self.enviro.reset()
+         
+        x0 = x 
+
+        for epoch in range(300): 
+            prediction = self.q.predict(x.reshape(1,-1))
+            u = np.argmin(prediction.reshape(self.Hpar.nu, self.Joints), axis = 0)
+            k = len(u)
+            if k == 1: 
+                u = u[0]
+            
+            x, cost = self.enviro.step(u)
+            ctgo = ctgo + (gamma*cost)
+            gamma = gamma*self.Hpar.gamma
+
+            self.enviro.render()
+
+        print(70*"#"); print("state :", x, "| cost to go :", ctgo); print(70*"#")
+
+
+    def get_critic3(self):
         
         inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
         state_out1 = layers.Dense(64, activation="relu")(inputs) 
@@ -249,14 +287,11 @@ class DQ():
         state_out3 = layers.Dense(64, activation="relu")(state_out2) 
         outputs = layers.Dense(self.Joints)(state_out3)
     
-        if Q_tgt:
-            model = tf.keras.Model(inputs, outputs, name="QTargets")
-        else: 
-            model = tf.keras.Model(inputs, outputs, name="QFunc")
+        model = tf.keras.Model(inputs, outputs)
     
         return model
 
-    def get_critic4(self, Q_tgt):
+    def get_critic4(self):
         
         inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
         state_out1 = layers.Dense(16, activation="relu")(inputs) 
@@ -265,14 +300,11 @@ class DQ():
         state_out4 = layers.Dense(64, activation="relu")(state_out3)
         outputs = layers.Dense(self.Joints)(state_out4)
     
-        if Q_tgt:
-            model = tf.keras.Model(inputs, outputs, name="QTargets")
-        else: 
-            model = tf.keras.Model(inputs, outputs, name="QFunc")
+        model = tf.keras.Model(inputs, outputs)
     
         return model
 
-    def get_critic6(self, Q_tgt): 
+    def get_critic6(self): 
         inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
         state_out1 = layers.Dense(16, activation="relu")(inputs) 
         state_out2 = layers.Dense(32, activation="relu")(state_out1) 
@@ -282,24 +314,24 @@ class DQ():
         state_out6 = layers.Dense(64, activation="relu")(state_out5)
         outputs = layers.Dense(1)(state_out6) 
 
-        if Q_tgt:
-            model = tf.keras.Model(inputs, outputs, name="QTargets")
-        else: 
-            model = tf.keras.Model(inputs, outputs, name="QFunc")
-
+        model = tf.keras.Model(inputs, outputs)
+    
         return model
 
     
 if __name__=="__main__":
-    deepQN = DQ(4,True)
+
+    deepQN = DQ(4)
+    training = True 
 
     if deepQN.single:
        print("Deep Q network for single pendulum with hiden layers",deepQN.NN_layers )
     else:
        print("Deep Q network for double pendulum", deepQN.NN_layers )
-    #print(25*"#")
-    #if deepQN.single:
-    #    print("Deep Q network for single pendulum with" + deepQN.NN_layers + "hidden layers")
-    #else:
-    #    print("Deep Q network for double pendulum" + deepQN.NN_layers + "hidden layers")
-    #print(25*"#")
+   
+    print(50*"--")
+    if training == True:
+        print("Begin training DQN ")
+        deepQN.trainNN()
+
+    
