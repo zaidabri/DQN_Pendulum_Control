@@ -122,7 +122,7 @@ class Pendulums:
             q0 = np.pi*(np.random.rand(self.nq)*2-1)
             v0 = np.random.rand(self.nv)*2-1
             x0 = np.vstack([q0,v0])
-        x0 = x0.flatten() # numpy flatten
+        x0 = x0.flatten()
         assert len(x0)==self.nx
         self.x = x0.copy()
         self.r = 0.0
@@ -130,7 +130,7 @@ class Pendulums:
 
     def step(self, u):
         ''' Simulate one time step '''
-        u = u if type(u) is np.ndarray else [u] #creates an array in case is necesary
+        u = u if type(u) is np.ndarray else [u]
         assert(len(u)==self.nu)
         _,self.r = self.dynamics(self.x, u)
         return self.obs(self.x), self.r
@@ -168,7 +168,7 @@ class Pendulums:
             pin.computeAllTerms(self.model,self.data,q,v)
             M   = self.data.M
             b   = self.data.nle
-            a   = inv(M).dot(u-self.Kf*v-b) # dot multiplicatin for array case
+            a   = inv(M).dot(u-self.Kf*v-b)
             a   = a.reshape(self.nv) + np.random.randn(self.nv)*self.noise_stddev
             self.a = a
 
@@ -183,7 +183,7 @@ class Pendulums:
         x[:self.nq] = modulePi(q)
         x[self.nq:] = np.clip(v,-self.vmax,self.vmax)
         
-        return x,cost #changes for minimization 
+        return x,cost
      
     def render(self):
         q = self.x[:self.nq]

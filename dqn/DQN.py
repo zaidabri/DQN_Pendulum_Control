@@ -1,4 +1,5 @@
 import os
+from re import U
 import sys
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
@@ -6,7 +7,7 @@ if module_path not in sys.path:
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
-from PendulumEnv import pend_Hybrid #Debugged
+from PendulumEnv import HybridP 
 import collections
 import matplotlib.pyplot as plt 
 import time 
@@ -31,13 +32,13 @@ class hyperParam:
         self.uptRate = 5 # The frequncy for updating the Q-target weights
         self.updateFreq = self.epochs/self.uptRate  # The frequncy for updating the Q-target weights
         self.batchSize = 64     # The batch size taken randomly from buffer
-        self.samplintSteps = 2   # The frequncy of sampling #DEBUG
+        self.samplintSteps = 4   # The frequncy of sampling #DEBUG
 
         #Buffers to store the trajectories in RL
         self.minBuffer = 5000  # The minimum size for the replay buffer to start training
         self.bufferSize = 50000 # The size of the replay buffer
         
-        self.nu = 10   # number of discretized steps 
+        self.nu = 11   # number of discretized steps 
         self.Up = 100   # After how many steps the pendulum holds the standup position before considered being a success
         
         self.QLearn = 2e-3   # The learning rate of the DQN model 
@@ -85,12 +86,13 @@ class DQ():
         # initialize enviroment
         self.Hpar = hyperParam()
         
-        self.enviro = pend_Hybrid.HybridP(2)
-        self.Joints = self.enviro.Joints
+        self.enviro = HybridP()
+        #print(self.enviro.nx)
+        self.Joints = 1
 
         self.nx = self.enviro.nx 
         self.nu = self.enviro.nu
-        
+        self.outFctr = self.Joints*self.nu
 
         if NN_layers == 4:
             self.q = self.get_critic4()
@@ -129,12 +131,14 @@ class DQ():
     def chooseU(self, x, eps):
 
         if np.random.uniform(0,1) < eps: 
-            u = np.random.randint(self.Hpar.nu, size=self.Joints)
+            #print("entered first if ")
+            u = np.random.randint(self.enviro.nu, size=self.Joints)
         else: 
+            #print("entered else")
             prediction = self.q.predict(x.reshape(1,-1))
-            u = np.argmin(prediction.reshape(self.Hpar.nu, self.Joints), axis = 0)
+            u = np.argmin(prediction.reshape(self.enviro.nu, self.Joints), axis = 0)
 
-
+        return u
 
     def trainNN(self): 
         Start = time.time()
@@ -150,7 +154,9 @@ class DQ():
             for step in range(self.Hpar.epochStep): 
                 step = step+1
 
+                #print("state", x, "epsilon", eps)
                 u = self.chooseU(x, eps)
+                #print("control", u, type(u))
                 xNext, cost = self.enviro.step(u)
 
                 if step == thres: 
@@ -176,14 +182,16 @@ class DQ():
             if ctgo < self.bCostTg:
 
                 self.bCostTg = ctgo
-                self.Q.save_weights("model"+str(self.NN_layers)+"dqn.h5")
+                self.q.save_weights("model"+str(self.NN_layers)+"dqn.h5")
                 
             
             eps= max(self.Hpar.minEpsilon, np.exp(-self.Hpar.decEps*epoch))
             self.costTg.append(ctgo)
             if epoch % self.Hpar.print == 0:
                
-                print('Epoch: %d | cost %.5f | %.4f Epsilon | time elapsed %.3f [s]' % (epoch, np.mean(self.h_ctg[-self.Hpar.print:]), eps, (time.time-Start)))
+                print("Epoch:", int(epoch)  ,"| cost :" , np.mean(self.costTg) ) # " | Epsilon: ", eps,  "| time elapsed [s]", (time.time-Start) ) #(' % (int(epoch), np.mean(self.costTg), eps, (time.time-Start)))
+                
+                #plt.plot()(time.time-Start)
                 Start = time.time()
 
         print("--------------- Plotting & Exporting costs overview --------------------------")
@@ -202,10 +210,18 @@ class DQ():
         xNextBatch = self.batchSMPL(3, batch)
         finishedBatch = self.batchSMPL(4, batch)
 
-        with tf.GradientTape as tape: 
+        print("batch", len(batch))
 
-            TarOut = self.qT(xNextBatch, training = True).reshape((len(batch), -1, self.Joints))
-            
+
+        with tf.GradientTape() as tape: 
+            print(50*"--")
+            print("type x next batch", type(xNextBatch))
+            print("type batch ", type(batch))
+            print("type  q target", type(self.qT))
+            TarOut = self.qT(xNextBatch, training = True).reshape( ( len(batch), -1, self.Joints))
+            print(100*"#")
+            print("target value 1st iter ")
+            print(150*"#")
             TarVal  = tf.math.reduce_sum(np.min(TarOut, axis=1), axis=1)
             
            
@@ -221,7 +237,7 @@ class DQ():
             qOut = self.q(xBatch, training=True).reshape((len(batch),-1,self.Joints))
 
             a = np.repeat(np.arange(len(batch)),self.Joints).reshape(len(batch),-1)
-            b = uBatch.reshape(n,-1)
+            b = uBatch.reshape(len(batch),-1)
             c = np.repeat(np.arange(self.Joints).reshape(1,-1),len(batch),axis=0)
 
             qVal  = tf.math.reduce_sum(qOut[a, b, c], axis=1)
@@ -279,11 +295,11 @@ class DQ():
 
     def get_critic3(self):
         
-        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
+        inputs = layers.Input(shape=(self.nx))
         state_out1 = layers.Dense(64, activation="relu")(inputs) 
         state_out2 = layers.Dense(64, activation="relu")(state_out1) 
         state_out3 = layers.Dense(64, activation="relu")(state_out2) 
-        outputs = layers.Dense(self.Joints)(state_out3)
+        outputs = layers.Dense(self.outFctr)(state_out3)
     
         model = tf.keras.Model(inputs, outputs)
     
@@ -291,26 +307,26 @@ class DQ():
 
     def get_critic4(self):
         
-        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
+        inputs = layers.Input(shape=(self.nx))
         state_out1 = layers.Dense(16, activation="relu")(inputs) 
         state_out2 = layers.Dense(32, activation="relu")(state_out1) 
         state_out3 = layers.Dense(64, activation="relu")(state_out2) 
         state_out4 = layers.Dense(64, activation="relu")(state_out3)
-        outputs = layers.Dense(self.Joints)(state_out4)
+        outputs = layers.Dense(self.outFctr)(state_out4)
     
         model = tf.keras.Model(inputs, outputs)
     
         return model
 
     def get_critic6(self): 
-        inputs = layers.Input(shape=(1,self.nx+self.Joints),batch_size=self.Hpar.batchSize)
+        inputs = layers.Input(shape=(self.nx))
         state_out1 = layers.Dense(16, activation="relu")(inputs) 
         state_out2 = layers.Dense(32, activation="relu")(state_out1) 
         state_out3 = layers.Dense(32, activation="relu")(state_out2) 
         state_out4 = layers.Dense(32, activation="relu")(state_out3)
         state_out5 = layers.Dense(32, activation="relu")(state_out4)
         state_out6 = layers.Dense(64, activation="relu")(state_out5)
-        outputs = layers.Dense(1)(state_out6) 
+        outputs = layers.Dense(self.outFctr)(state_out6) 
 
         model = tf.keras.Model(inputs, outputs)
     
@@ -319,10 +335,12 @@ class DQ():
     
 if __name__=="__main__":
 
+    np.random.seed(int((time.time()%10)*1000))
+
     deepQN = DQ(4)
     training = True 
 
-    print("Deep Q network for double pendulum", deepQN.NN_layers )
+    print("Deep Q network for double pendulum with", deepQN.NN_layers, " hidden layers" )
    
     print(50*"--")
     if training == True:
