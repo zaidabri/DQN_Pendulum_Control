@@ -85,12 +85,11 @@ class DQ():
         # initialize enviroment
         self.Hpar = hyperParam()
         
-        self.enviro = pend_Hybrid.Double_Hpendulum()
-        self.Joints = 2 
+        self.enviro = pend_Hybrid.HybridP(2)
+        self.Joints = self.enviro.Joints
 
-        self.nx = self.enviro.NX
-        #self.nv = self.enviro.NV     
-        self.nu = self.Hpar.nu
+        self.nx = self.enviro.nx 
+        self.nu = self.enviro.nu
         
 
         if NN_layers == 4:

@@ -1,121 +1,46 @@
 from pendulum import Pendulums #Simulation of the environment for a N-pendulum
 import numpy as np
 
-class Single_Hpendulum:
 
-    ''' We create a single pendulum environment. 
-    In order to create an hybrid pendulum the Joint Angle, as well as the velocity are continous,
-    while the torque applied to the joint is discretized with dis_steps 
 
-    '''
-    def __init__(self, nJoint=1, dis_steps=10, qMax=10, dt=0.1, ndt=1):
-
-        self.N_pend = Pendulums(nJoint, 0) #BUGG  # create a normal pendulum env first, we assume no noise in the model 
-        self.dt = dt 
-        self.N_pend.DT = self.dt
-        self.ndt = ndt
-        self.N_pend.NDT = self.ndt
-        self.NJoint = nJoint
-        self.steps = dis_steps  # number of discretization steps   # BUG  TODO FIX IT ASAP 
-        self.NX = self.N_pend.nx 
-        self.NV = self.N_pend.nv 
-        self.qMax = qMax                    # % maximum torque in the system 
-        self.DU = 2*self.qMax / self.steps  # we calculate the joint torque resolution 
+class HybridP:
+    def init(self, Joints, nu=14, uMax=10, dt=0.2, ndt=1, noise_stddev=0):
+        self.Joints  = Joints
+        self.Pend = Pendulums(self.Joints,0)
+        self.Pend.DT  = dt
+        self.Pend.NDT = ndt
+        self.nu = nu        
+        self.nx = self.Pend.nx
+        self.uMax = uMax   
+        self.DU = 2*uMax/nu 
     
-    def reset(self):
-        ''' resets state of the pendulum to a random position and velocity'''
-        self.x = self.N_pend.reset(None)
-        return self.x
-
     def render(self):
-        self.N_pend.render()
+        self.Pend.render()
 
-    def ContinousCtrl(self, iu):
-        ''' this function allows to 
-        switch the control from discreate to continous and it is used for the 
-        state calculations'''
-
-        steps_ = self.steps -1 
-        c = np.clip(iu, 0, steps_) 
-        iu = c - steps_/2
-
-        return iu*self.DU
-    
-
-    def step(self,iu):
-        ''' We calculate the next state and cost'''
-        u = self.ContinousCtrl(iu)
-
-        if type(u) is np.ndarray: 
-            u = u 
-        else: 
-           u = [u]
-    
-        self.x, cost = self.N_pend.step(u)
-        return self.x, cost
-
-
-
-class Double_Hpendulum:
-
-    ''' We create a double pendulum environment. 
-    In order to create an hybrid pendulum the Joint Angle, as well as the velocity are continous,
-    while the torque applied to the joint is discretized with dis_steps 
-
-    '''
-    def __init__(self, nJoint=2, dis_steps=10, qMax=10, dt=0.1, ndt=1):
-
-        self.N_pend = Pendulums(nJoint, 0)
-  # create a normal pendulum env first, we assume no noise in the model 
-        self.dt = dt 
-        self.N_pend.DT = self.dt
-        self.N_pend.NDT = ndt
-        self.NJoint = nJoint
-        self.steps = dis_steps  # number of discretization steps 
-        self.NX = self.N_pend.nx 
-        self.qMax = qMax                    # % maximum torque in the system 
-        self.DU = 2*self.qMax / self.steps  # we calculate the joint torque resolution 
     
     def reset(self, x=None):
-        ''' resets state of the pendulum to a random position and velocity'''
-        self.x = self.N_pend.reset(x)
+        self.x = self.Pend.reset(x)
         return self.x
 
-    def render(self):
-        self.N_pend.render()
+
+    def DtoC(self, yi):
+        yi = np.clip(yi,0,self.nu-1) - (self.nu-1)/2
+        u_cont = self.DU*yi
+        return u_cont
 
 
-    def DiscreteCtrl(self, u):
-        '''
-        this function allows to switch the control input from continous to discrete
-        according to the chosen control discretization steps 
-        '''
-        u = np.clip(u,-self.qMax+1e-3,self.qMax-1e-3)
-        disc_ctrl_input = np.floor((u+self.qMax)/self.DU).astype(int)
-        return disc_ctrl_input
-
-
-    def ContinousCtrl(self, iu):
-        ''' this function allows to 
-        switch the control from discreate to continous and it is used for the 
-        state calculations'''
-
-        steps_ = self.steps -1 
-        c = np.clip(iu, 0, steps_) 
-        iu = c - steps_/2
-
-        return iu*self.DU
-    
-
-    def step(self,iu):
-        ''' We calculate the next state and cost'''
-        u = self.ContinousCtrl(iu)
-        
-        if type(u) is np.ndarray: 
-            u = u 
-        else: 
-           u = [u]
-    
-        self.x, cost = self.N_pend.step(u)
-
+    def step(self,yi):
+        u = self.DtoC(yi)
+        self.x, cost = self.Pend.step(u)
         return self.x, cost
+    
+
+    
+    def CtoD(self, u):
+        u = np.clip(u,-self.uMax+1e-3,self.uMax-1e-3)
+        disc_u = np.floor((u+self.uMax)/self.DU).astype(int)
+        return disc_u
+    
+    
+    
+    
