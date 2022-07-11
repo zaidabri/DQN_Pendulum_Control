@@ -5,13 +5,21 @@ This project aims to implement a Deep Q Network to control a simple and double p
 
 ## Requirements
 Linux system with Python >= 3.6 installed
+
 TensorFlow library installed 
+
 From http://robotpkg.openrobots.org/wip/packages/debian/pub : 
+
 robotpkg-py38-pinocchio 
+
 robotpkg-py38-example-robot-data 
-robotpkg-urdfdom 
-robotpkg-py38-qt5-gepetto-viewer-corba 
+
+robotpkg-urdfdom
+
+robotpkg-py38-qt5-gepetto-viewer-corba
+
 robotpkg-py38-quadprog 
+
 robotpkg-py38-tsid
 
 
