@@ -5,7 +5,7 @@ import numpy as np
 
 class HybridP:
 
-    def __init__(self, Joints =2 , nu=11, uMax=15, dt=0.1, ndt=1, noise_stddev=0):
+    def __init__(self, Joints , nu=11, uMax=15, dt=0.1, ndt=1, noise_stddev=0):
 
         self.Joints  = Joints
         self.Pend = Pendulums(self.Joints,0)
@@ -13,7 +13,12 @@ class HybridP:
         self.Pend.NDT = ndt
         self.nu = nu        
         self.nx = self.Pend.nx
-        self.uMax = uMax   
+        if self.Joints== 2:
+            self.uMax = uMax/3
+        else:
+            self.uMax= uMax
+
+
         self.DU = 2*uMax/nu 
     
     

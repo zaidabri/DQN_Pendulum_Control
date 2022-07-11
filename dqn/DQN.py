@@ -31,7 +31,7 @@ class DeepQNN:
     
     def __init__(self, nu, NN_h):
         self.nu = nu
-        self.Joints = 2
+        self.Joints = 1  # change this to 2 to test double pendulum 
         self.env = pend_Hybrid.HybridP(self.Joints, self.nu, dt=0.1)
         self.nx = self.env.nx
         
@@ -157,11 +157,13 @@ class DeepQNN:
                 steps += 1
             
             # Save NN weights everytime a better cost to go is found and plot the average cost to go vs the best 
-            if c2go < self.Bestc2go:
-                self.saveModel(c2go)
-                self.cost2goImprov.append(c2go) # store best cost to go 
+            if abs(c2go) < abs(self.Bestc2go):
+                self.saveModel()
+                self.Bestc2go = c2go  # update best cost to go 
+                self.cost2goImprov.append(self.Bestc2go) # store best cost to go 
                 self.epochC2G.append(epoch)     # store at what epoch it was found 
                 self.plotting(epoch)
+
             
             epsilon = max(h.MIN_EPSILON, np.exp(-h.EPSILON_DECAY*epoch)) # calculate the decay of epsilon
             self.ctgRecord.append(c2go) # append current cost to go in array 
@@ -174,21 +176,22 @@ class DeepQNN:
                 if epoch % 50 == 0: # save model every 50 epochs 
                     print(50*"--")
                     print("saving and plotting model at epoch", epoch)
-                    self.saveModel(c2go)
-                    self.plotting(self.epochExport)
+                    self.saveModel()
+                    #self.plotting(self.epochExport)
 
                 print(50*"--")
                 print('Epoch %d | cost %.1f | exploration prob epsilon %.6f | time elapase [s] %.5f s | cost to go improved in total %d times | best cost to go %.3f' % (
                       epoch, np.mean(self.ctgRecord[-self.printF:]), epsilon, dt, len(self.cost2goImprov), self.Bestc2go))
                 print(50*"--")
+                self.plotting(self.epochExport+1)
                 
         if self.plotsFinal:
-            self.plotting()
-            self.exportCosts(self.epochExport)
+            self.plotting(h.EPOCHS)
+            self.exportCosts(h.EPOCHS)
     
     def plotting(self, epochs):
         ''' Plot the average cost-to-go history and best cost to go and its relative epoch of when it was found  '''
-        plt.plot(np.cumsum(self.ctgRecord)/range(1,epochs+1))
+        plt.plot(np.cumsum(self.ctgRecord)/range(1,epochs+1), color= 'blue')
         plt.scatter(self.epochC2G, self.cost2goImprov, color = 'red')
         plt.grid(True)
         plt.xlabel("epochs [n]")
@@ -196,15 +199,23 @@ class DeepQNN:
         plt.legend(["Avg", "Best"])
         plt.title ("Average cost-to-go vs Best cost to go update")
         plt.savefig("costToGo.eps")
-        plt.show()
+        #plt.show()
+        #time.sleep(2)
+        plt.close()
+
+        #Epochcost = np.cumsum(self.ctgRecord)/range(1,int(epochs+1)) 
+        cost = pd.Series(self.epochC2G, self.cost2goImprov)
+        cost.to_csv('costsImprov.csv', header=None)
+
+
+
         
-    def saveModel(self, ctgo):
+    def saveModel(self):
         print(50*"#","New better cost to go found! Saving Model", 50*"#")
         self.q.save_weights("DeepQNN.h5")
-        self.Bestc2go = ctgo
     
     def visualize(self, file_name, x=None):
-        '''Roll-out from random state using trained DQN.'''
+        '''Visualize NN results loading model weights and letting it run for 10% of training epochs '''
         # Load NN weights from file
         self.q.load_weights(file_name)
         
@@ -227,6 +238,7 @@ class DeepQNN:
 
             gamma *= h.GAMMA
             self.env.render()
+        
         
         self.exportCosts(h.EPOCHS/10)
         
@@ -266,11 +278,11 @@ class DeepQNN:
 
 if __name__=='__main__':
 
-    training = True
-    #np.random.seed(int((time.time()%10)*2000))
-    file_name = "DeepQNN.h5"
-    
-    deepQN = DeepQNN(11,3)
+    training = False
+    file_name = "DeepQNN4LayersSingle.h5"  # Single pendulum model 
+    #file_name = "DeepQNNDouble3.h5"        # Double pendulum model 
+
+    deepQN = DeepQNN(11,4)
     if training:
         print(50*"#"); print("Beginning training ")
         deepQN.trainNN()
