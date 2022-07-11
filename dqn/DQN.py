@@ -29,9 +29,9 @@ np_config.enable_numpy_behavior()
 class DeepQNN:
     ''' This class depicts a Deep Q Network applied to a pendulum with a variable number of joints '''
     
-    def __init__(self, nu, NN_h):
+    def __init__(self, nu, NN_h, joints):
         self.nu = nu
-        self.Joints = 1  # change this to 2 to test double pendulum 
+        self.Joints = joints  # change this to 2 to test double pendulum 
         self.env = pend_Hybrid.HybridP(self.Joints, self.nu, dt=0.1)
         self.nx = self.env.nx
         
@@ -233,14 +233,12 @@ class DeepQNN:
             if len(u) == 1:
                 u = u[0]
             x, cost = self.env.step(u)
-            costToGo += gamma*cost
+            costToGo += gamma**cost
             self.ctgRecord.append(costToGo)
 
             gamma *= h.GAMMA
             self.env.render()
         
-        
-        self.exportCosts(h.EPOCHS/10)
         
     
 
@@ -279,10 +277,10 @@ class DeepQNN:
 if __name__=='__main__':
 
     training = False
-    file_name = "DeepQNN4LayersSingle.h5"  # Single pendulum model 
-    #file_name = "DeepQNNDouble3.h5"        # Double pendulum model 
+    file_name =   "models/Best models/DeepQNN4LayersSingle.h5"      # "models/Best models/DeepQNN3LayersSingle.h5"        # single pendulum model 
+    #file_name =  "models/Best models/DeepQNNDouble3.h5" #  Double pendulum model 
 
-    deepQN = DeepQNN(11,4)
+    deepQN = DeepQNN(11,4,1)  # discretization steps , hidden layers , pendulum joints
     if training:
         print(50*"#"); print("Beginning training ")
         deepQN.trainNN()
@@ -294,4 +292,4 @@ if __name__=='__main__':
             exit()
 
     else: 
-        deepQN.visualize(file_name)
+        deepQN.visualize(file_name) # greedy strategy renderization 
