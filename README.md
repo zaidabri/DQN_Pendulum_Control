@@ -1,8 +1,7 @@
 # Deep Q-Learning Neural Network for single and double pendulum control
 
 ## Description
-The aim of this project is to implement a Deep Q Network to control a simple and a double pendulum simulation, where the joint angle and velocity are continuous and torque is discretized. The pendulum environment was developed and controlled within an implementation made in Python. 
-For further insights please refer to the PDF paper os this repository.
+This project aims to implement a Deep Q Network to control a simple and double pendulum simulation, where the joint angle and velocity are continuous, and torque is discretized. The pendulum environment was developed and controlled within an implementation made in Python. For further insights, please refer to the PDF paper of this repository.
 
 ## Requirements
 Linux system with Python >= 3.6 installed
