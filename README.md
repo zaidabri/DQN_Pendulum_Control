@@ -8,7 +8,7 @@ Linux system with Python >= 3.6 installed
 
 TensorFlow library installed 
 
-From http://robotpkg.openrobots.org/wip/packages/debian/pub : 
+From http://robotpkg.openrobots.org/: 
 
 robotpkg-py38-pinocchio 
 
