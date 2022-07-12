@@ -31,7 +31,7 @@ class DeepQNN:
     
     def __init__(self, nu, NN_h, joints):
         self.nu = nu
-        self.Joints = joints  # change this to 2 to test double pendulum 
+        self.Joints = joints  
         self.env = pend_Hybrid.HybridP(self.Joints, self.nu, dt=0.1)
         self.nx = self.env.nx
         
@@ -64,7 +64,7 @@ class DeepQNN:
         self.Bestc2go = np.inf
 
         self.cost2goImprov = []
-        self.epochC2G = []
+        self.episodeC2G = []
 
     
 
@@ -128,17 +128,17 @@ class DeepQNN:
         
         t = time.time() # start measuring the time needed for training 
         
-        for epoch in range(h.EPOCHS):
+        for episode in range(h.EPISODES):
             c2go = 0.0
             x = self.env.reset()
             gamma = 1
-            self.epochExport = epoch # keep track of current epoch for plotting on-the-go and exporting data to external .csv file 
+            self.episodeExport = episode # keep track of current episode for plotting on-the-go and exporting data to external .csv file 
             
-            for step in range(h.MAX_EPOCH_LENGTH):
+            for step in range(h.MAX_EPISODE_LENGTH):
                 u = self.chooseU(x, epsilon)
                 x_next, cost = self.env.step(u)
                 
-                finished = True if step == h.MAX_EPOCH_LENGTH - 1 else False
+                finished = True if step == h.MAX_EPISODE_LENGTH - 1 else False
                 self.replay_buffer.append([x, u, cost, x_next, finished])
                 
                 # update weights of target network according to hyperparameters 
@@ -161,40 +161,40 @@ class DeepQNN:
                 self.saveModel()
                 self.Bestc2go = c2go  # update best cost to go 
                 self.cost2goImprov.append(self.Bestc2go) # store best cost to go 
-                self.epochC2G.append(epoch)     # store at what epoch it was found 
-                self.plotting(epoch)
+                self.episodeC2G.append(episode)     # store at what episode it was found 
+                self.plotting(episode)
 
             
-            epsilon = max(h.MIN_EPSILON, np.exp(-h.EPSILON_DECAY*epoch)) # calculate the decay of epsilon
+            epsilon = max(h.MIN_EPSILON, np.exp(-h.EPSILON_DECAY*episode)) # calculate the decay of epsilon
             self.ctgRecord.append(c2go) # append current cost to go in array 
             
             # Regularly print in terminal useful info about how the training is proceding 
-            if epoch != 0 and epoch % self.printF == 0:
+            if episode != 0 and episode % self.printF == 0:
                 dt = time.time() - t # calculate elapsed time since last printing to terminal 
                 t = time.time()
 
-                if epoch % 50 == 0: # save model every 50 epochs 
+                if episode % 50 == 0: # save model every 50 episodes 
                     print(50*"--")
-                    print("saving and plotting model at epoch", epoch)
+                    print("saving and plotting model at episode", episode)
                     self.saveModel()
-                    #self.plotting(self.epochExport)
+                    #self.plotting(self.episodeExport)
 
                 print(50*"--")
-                print('Epoch %d | cost %.1f | exploration prob epsilon %.6f | time elapase [s] %.5f s | cost to go improved in total %d times | best cost to go %.3f' % (
-                      epoch, np.mean(self.ctgRecord[-self.printF:]), epsilon, dt, len(self.cost2goImprov), self.Bestc2go))
+                print('episode %d | cost %.1f | exploration prob epsilon %.6f | time elapase [s] %.5f s | cost to go improved in total %d times | best cost to go %.3f' % (
+                      episode, np.mean(self.ctgRecord[-self.printF:]), epsilon, dt, len(self.cost2goImprov), self.Bestc2go))
                 print(50*"--")
-                self.plotting(self.epochExport+1)
+                self.plotting(self.episodeExport+1)
                 
         if self.plotsFinal:
-            self.plotting(h.EPOCHS)
-            self.exportCosts(h.EPOCHS)
+            self.plotting(h.EPISODES)
+            self.exportCosts(h.EPISODES)
     
-    def plotting(self, epochs):
-        ''' Plot the average cost-to-go history and best cost to go and its relative epoch of when it was found  '''
-        plt.plot(np.cumsum(self.ctgRecord)/range(1,epochs+1), color= 'blue')
-        plt.scatter(self.epochC2G, self.cost2goImprov, color = 'red')
+    def plotting(self, episodes):
+        ''' Plot the average cost-to-go history and best cost to go and its relative episode of when it was found  '''
+        plt.plot(np.cumsum(self.ctgRecord)/range(1,episodes+1), color= 'blue')
+        plt.scatter(self.episodeC2G, self.cost2goImprov, color = 'red')
         plt.grid(True)
-        plt.xlabel("epochs [n]")
+        plt.xlabel("episodes [n]")
         plt.ylabel("cost to go ")
         plt.legend(["Avg", "Best"])
         plt.title ("Average cost-to-go vs Best cost to go update")
@@ -203,8 +203,8 @@ class DeepQNN:
         #time.sleep(2)
         plt.close()
 
-        #Epochcost = np.cumsum(self.ctgRecord)/range(1,int(epochs+1)) 
-        cost = pd.Series(self.epochC2G, self.cost2goImprov)
+        #episodecost = np.cumsum(self.ctgRecord)/range(1,int(episodes+1)) 
+        cost = pd.Series(self.episodeC2G, self.cost2goImprov)
         cost.to_csv('costsImprov.csv', header=None)
 
 
@@ -215,7 +215,7 @@ class DeepQNN:
         self.q.save_weights("DeepQNN.h5")
     
     def visualize(self, file_name, x=None):
-        '''Visualize NN results loading model weights and letting it run for 10% of training epochs '''
+        '''Visualize NN results loading model weights and letting it run for 10% of training episodes '''
         # Load NN weights from file
         self.q.load_weights(file_name)
         
@@ -227,7 +227,7 @@ class DeepQNN:
         costToGo = 0.0
         gamma = 1
         
-        for i in range(int(h.EPOCHS/10)):
+        for i in range(int(h.EPISODES/3)):
             pred = self.q.predict(x.reshape(1,-1))
             u = np.argmin(pred.reshape(self.nu,self.Joints), axis=0)
             if len(u) == 1:
@@ -267,28 +267,28 @@ class DeepQNN:
     
         return model
 
-    def exportCosts(self, epochs):
+    def exportCosts(self, episodes):
         '''function used to export the costs for further data analysis in an external file'''
-        cost = np.cumsum(self.ctgRecord)/range(1,int(epochs+1)) 
+        cost = np.cumsum(self.ctgRecord)/range(1,int(episodes+1)) 
         cost = pd.Series(cost)
         cost.to_csv('costs.csv', header=None)
 
 
 if __name__=='__main__':
 
-    training = False
-    file_name =   "models/Best models/DeepQNN4LayersSingle.h5"      # "models/Best models/DeepQNN3LayersSingle.h5"        # single pendulum model 
-    #file_name =  "models/Best models/DeepQNNDouble3.h5" #  Double pendulum model 
+    training = True
+    #file_name =   "models/Best models/DeepQNN4LayersSingle.h5"      # "models/Best models/DeepQNN3LayersSingle.h5"        # single pendulum model 
+    file_name =  "models/Best models/DeepQNNDouble3.h5" #  Double pendulum model 
 
-    deepQN = DeepQNN(11,4,1)  # discretization steps , hidden layers , pendulum joints
+    deepQN = DeepQNN(11,3,2)  # discretization steps , hidden layers , pendulum joints
     if training:
         print(50*"#"); print("Beginning training ")
         deepQN.trainNN()
 
         if keyboard.is_pressed('s'): # manually stop training by pressing S so that the meaningful data of the model are safely saved 
             deepQN.saveModel()
-            deepQN.exportCosts(deepQN.epochExport)
-            deepQN.plotting(deepQN.epochExport)
+            deepQN.exportCosts(deepQN.episodeExport)
+            deepQN.plotting(deepQN.episodeExport)
             exit()
 
     else: 
