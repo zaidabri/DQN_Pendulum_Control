@@ -6,7 +6,7 @@ if module_path not in sys.path:
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
-from PendulumEnv import pend_Hybrid #Debugged
+from PendulumEnv import pend_Hybrid 
 import matplotlib.pyplot as plt 
 import time 
 from random import sample
@@ -30,10 +30,10 @@ class DeepQNN:
     ''' This class depicts a Deep Q Network applied to a pendulum with a variable number of joints '''
     
     def __init__(self, nu, NN_h, joints):
-        self.nu = nu
-        self.Joints = joints  
+        self.nu = nu # number of discretization steps 
+        self.Joints = joints  # number of revolute joints of the pendulum 
         self.env = pend_Hybrid.HybridP(self.Joints, self.nu, dt=0.1)
-        self.nx = self.env.nx
+        self.nx = self.env.nx # 
         
         self.printF = 25 # printing frequency
         self.export = True # flag to export cost to go into external pandas file 
@@ -60,11 +60,11 @@ class DeepQNN:
         self.optimizer = tf.keras.optimizers.Adam(h.QVALUE_LEARNING_RATE)
         self.replay_buffer = deque(maxlen=h.REPLAY_BUFFER_SIZE)
         
-        self.ctgRecord = []
-        self.Bestc2go = np.inf
+        self.ctgRecord = [] # storing  cost to go 
+        self.Bestc2go = np.inf # initial cost to go 
 
-        self.cost2goImprov = []
-        self.episodeC2G = []
+        self.cost2goImprov = [] # storing only the best cost to go
+        self.episodeC2G = [] # storing the episode number at which the SGD finds a better local minima 
 
     
 
@@ -78,10 +78,10 @@ class DeepQNN:
         x_next_batch = np.array([sample[3] for sample in batch])
         finished_batch   = np.array([sample[4] for sample in batch])
         
-        n = len(batch)
+        n = len(batch) # length of batch -- 64 
         
         with tf.GradientTape() as tape:
-            # Compute Q target
+            # Compute Q target using the second NN 
             target_output = self.q_target(x_next_batch, training=True).reshape((n,-1,self.Joints))
             target_value  = tf.math.reduce_sum(np.min(target_output, axis=1), axis=1)
             
@@ -109,9 +109,9 @@ class DeepQNN:
 
     def chooseU(self, x, epsilon):
         ''' Choose the discrete control of the system following an epsilon greedy strategy'''
-        if uniform(0,1) < epsilon:
+        if uniform(0,1) < epsilon: # explore 
             u = randint(self.nu, size=self.Joints)
-        else:
+        else: # exploit 
             pred = self.q.predict(x.reshape(1,-1))
             u = np.argmin(pred.reshape(self.nu,self.Joints), axis=0)
     
@@ -150,7 +150,7 @@ class DeepQNN:
                     batch = sample(self.replay_buffer, h.BATCH_SIZE)
                     self.update(batch)
                 
-                # update state , steps and hyperparameters accordingly
+                # update state , steps and discount factor accordingly
                 x = x_next 
                 c2go += gamma * cost
                 gamma *= h.GAMMA
@@ -211,13 +211,13 @@ class DeepQNN:
 
         
     def saveModel(self):
-        print(50*"#","New better cost to go found! Saving Model", 50*"#")
+        print(50*"#","New better cost to go found! Saving Model", 50*"#") # the model is also saved at regular intervals 
         self.q.save_weights("DeepQNN.h5")
     
-    def visualize(self, file_name, x=None):
-        '''Visualize NN results loading model weights and letting it run for 10% of training episodes '''
+    def visualize(self, file_name, x=None): 
+        '''Visualize NN results loading model weights and letting it run for 33% of the training episodes '''
         # Load NN weights from file
-        self.q.load_weights(file_name)
+        self.q.load_weights(file_name) # load weights 
         
         if x is None:
             x0 = x = self.env.reset()
@@ -228,16 +228,16 @@ class DeepQNN:
         gamma = 1
         
         for i in range(int(h.EPISODES/3)):
-            pred = self.q.predict(x.reshape(1,-1))
+            pred = self.q.predict(x.reshape(1,-1))   # greedy control selection 
             u = np.argmin(pred.reshape(self.nu,self.Joints), axis=0)
             if len(u) == 1:
                 u = u[0]
             x, cost = self.env.step(u)
-            costToGo += gamma**cost
+            costToGo += gamma*cost
             self.ctgRecord.append(costToGo)
 
             gamma *= h.GAMMA
-            self.env.render()
+            self.env.render() 
         
         
     
@@ -276,11 +276,11 @@ class DeepQNN:
 
 if __name__=='__main__':
 
-    training = True
-    #file_name =   "models/Best models/DeepQNN4LayersSingle.h5"      # "models/Best models/DeepQNN3LayersSingle.h5"        # single pendulum model 
-    file_name =  "models/Best models/DeepQNNDouble3.h5" #  Double pendulum model 
+    training = False 
+    file_name =   "models/Best models/DeepQNN4LayersSingle.h5"      # "models/Best models/DeepQNN3LayersSingle.h5"        # single pendulum model 
+    #file_name =  "models/Best models/DeepQNNDouble3.h5" #  Double pendulum model 
 
-    deepQN = DeepQNN(11,3,2)  # discretization steps , hidden layers , pendulum joints
+    deepQN = DeepQNN(11,4,1)  # Input Param: discretization steps , hidden layers , pendulum joints
     if training:
         print(50*"#"); print("Beginning training ")
         deepQN.trainNN()
