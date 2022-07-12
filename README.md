@@ -1,43 +1,45 @@
-# Q-Learning Hybrid Single and Double Pendulums control 
-This is the link to the report: 
-https://www.overleaf.com/project/62b757a102046cf96fc981fa
+# Deep Q-Learning Neural Network for single and double pendulum control
 
 ## Description
+This project aims to implement a Deep Q Network to control a simple and double pendulum simulation, where the joint angle and velocity are continuous, and torque is discretized. The pendulum environment was developed and controlled within an implementation made in Python. 
 
 ## Requirements
-A Linux system with Python >= 3.6 installed
+Linux system with Python >= 3.6 installed
+
+TensorFlow library installed 
+
+From http://robotpkg.openrobots.org/: 
+
+robotpkg-py38-pinocchio 
+
+robotpkg-py38-example-robot-data 
+
+robotpkg-urdfdom
+
+robotpkg-py38-qt5-gepetto-viewer-corba
+
+robotpkg-py38-quadprog 
+
+robotpkg-py38-tsid
+
 
 ## Running setup
-Before running the script -----.py on the command line, make sure you are located in the desired directory where you wish to download the Contents index file. If not, please change directory on the command line with the command:
-```
-cd ~/desired_directory
-```
+Download the repository and run the script DQN.py on the command line.
+
+## Results
+
+For further insights, please refer to the PDF paper of this repository.
+
+https://user-images.githubusercontent.com/83652632/178354517-7d9f68c1-5f83-4787-b1c4-59ecd6ffc18e.mp4
 
 
 
-### Run the script through python3
-The script can also be run normally through the python3 command line. Here there is an example command line 
-python3 ----.py 
 
-
-## Usage
-Here there is an example of an expected output:
-
-## Contents indices format and parsing
+https://user-images.githubusercontent.com/83652632/178365998-a9b916e5-8562-4969-8559-d41eb1b4af68.mp4
 
 
 
-## Testing and cross-check
 
-## Thinking process and approach to the problem
-The development of the assignment followed an agile method of coding to increasingly improve the quality of the code. However, it is possible to distinguish 3 main phases of the development.
 
-## Authors and acknowledgment
---------------------------
-
-## License
-GNU General Public License (GPL 3.0)
-
-# Roadmap - Project status
 
 
