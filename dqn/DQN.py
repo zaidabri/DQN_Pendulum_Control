@@ -85,7 +85,7 @@ class DeepQNN:
             target_output = self.q_target(x_next_batch, training=True).reshape((n,-1,self.Joints))
             target_value  = tf.math.reduce_sum(np.min(target_output, axis=1), axis=1)
             
-            # Compute 1-step targets for the critic loss
+            # Compute 1-step targets for the critic loss 
             y = np.zeros(n)
             for id, finished in enumerate(finished_batch):
                 if finished:
@@ -134,19 +134,23 @@ class DeepQNN:
             gamma = 1
             self.episodeExport = episode # keep track of current episode for plotting on-the-go and exporting data to external .csv file 
             
-            for step in range(h.MAX_EPISODE_LENGTH):
-                u = self.chooseU(x, epsilon)
+            for step in range(h.MAX_EPISODE_LENGTH):  # SAMPLING PHASE 
+                u = self.chooseU(x, epsilon) 
                 x_next, cost = self.env.step(u)
                 
-                finished = True if step == h.MAX_EPISODE_LENGTH - 1 else False
-                self.replay_buffer.append([x, u, cost, x_next, finished])
+                finished = True if step == h.MAX_EPISODE_LENGTH - 1 else False  
+
+                # # REPLAY MEMORY -- BReak correlation between consecutive samples, if network would learn only from them and they're highly correlated samples 
+                # thus inefficient learning 
+
+                self.replay_buffer.append([x, u, cost, x_next, finished])  # agent experience at step t stored in replay memory 
                 
                 # update weights of target network according to hyperparameters 
                 if steps % h.UPDATE_Q_TARGET_STEPS == 0:
                     self.q_target.set_weights(self.q.get_weights())
                 
                 # Sampling from replay buffer and train NN accordingly 
-                if len(self.replay_buffer) > h.MIN_BUFFER_SIZE and steps % h.SAMPLING_STEPS == 0:
+                if len(self.replay_buffer) > h.MIN_BUFFER_SIZE and steps % h.SAMPLING_STEPS == 0:  # TRAINING PHASE 
                     batch = sample(self.replay_buffer, h.BATCH_SIZE)
                     self.update(batch)
                 
@@ -212,7 +216,8 @@ class DeepQNN:
         
     def saveModel(self):
         print(50*"#","New better cost to go found! Saving Model", 50*"#") # the model is also saved at regular intervals 
-        self.q.save_weights("DeepQNN.h5")
+        t = time.time()
+        self.q.save_weights(str(t)+"DeepQNN.h5")
     
     def visualize(self, file_name, x=None): 
         '''Visualize NN results loading model weights and letting it run for 33% of the training episodes '''
@@ -249,7 +254,7 @@ class DeepQNN:
         state_out2 = layers.Dense(32, activation="relu")(state_out1) 
         state_out3 = layers.Dense(64, activation="relu")(state_out2) 
         state_out4 = layers.Dense(64, activation="relu")(state_out3)
-        outputs = layers.Dense(self.Joints*self.nu)(state_out4)
+        outputs = layers.Dense(self.Joints**self.nu)(state_out4)
     
         model = tf.keras.Model(inputs, outputs)
     
@@ -261,7 +266,7 @@ class DeepQNN:
         state_out1 = layers.Dense(64, activation="relu")(inputs) 
         state_out2 = layers.Dense(64, activation="relu")(state_out1) 
         state_out3 = layers.Dense(64, activation="relu")(state_out2) 
-        outputs = layers.Dense(self.Joints*self.nu)(state_out3)
+        outputs = layers.Dense(self.Joints**self.nu)(state_out3)
     
         model = tf.keras.Model(inputs, outputs)
     
